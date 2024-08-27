@@ -3,29 +3,43 @@ const db = require('../db/db');
 
 
 
-// Mark Attendance (Unchanged)
+// controllers/attendanceController.js
+
 exports.markAttendance = (req, res) => {
-  try {
-    const { class_id, teacher_id, attendance_date, status } = req.body;
-
-    const query = `
-      INSERT INTO attendance (class_id, teacher_id, attendance_date, status)
-      VALUES (?, ?, ?, ?)
+    const { class_id, teacher_id, attendance_date, status, latitude, longitude } = req.body;
+  
+    const checkQuery = `
+      SELECT * FROM attendance 
+      WHERE class_id = ? AND teacher_id = ? AND attendance_date = ?
     `;
-
-    db.query(query, [class_id, teacher_id, attendance_date, status], (err, result) => {
+  
+    db.query(checkQuery, [class_id, teacher_id, attendance_date], (err, results) => {
       if (err) {
-        console.error('Error marking attendance:', err);
+        console.error('Error checking attendance:', err);
         return res.status(500).json({ error: 'Internal server error' });
       }
-
-      res.status(201).json({ message: 'Attendance marked successfully' });
+  
+      if (results.length > 0) {
+        return res.status(400).json({ error: 'Attendance has already been recorded for this class.' });
+      }
+  
+      const insertQuery = `
+        INSERT INTO attendance (class_id, teacher_id, attendance_date, status, latitude, longitude)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+  
+      db.query(insertQuery, [class_id, teacher_id, attendance_date, status, latitude, longitude], (err, result) => {
+        if (err) {
+          console.error('Error marking attendance:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+        }
+  
+        res.status(201).json({ message: 'Attendance marked successfully', attendance_id: result.insertId });
+      });
     });
-  } catch (error) {
-    console.error('Error during attendance marking:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
+  };
+  
+  
 
 // Get Unapproved Attendance for Supervisor
 exports.getUnapprovedAttendance = (req, res) => {
@@ -104,5 +118,31 @@ exports.getClassesForTeacher = (req, res) => {
       console.error('Error fetching classes for teacher:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+  };
+  
+
+exports.getAttendanceHistoryForTeacher = (req, res) => {
+    const { teacher_id } = req.params;
+  
+    const query = `
+      SELECT a.*, c.course_code, c.course_name, 
+             CASE 
+               WHEN a.approved_by_supervisor = 1 THEN 'Approved'
+               ELSE 'Unapproved'
+             END AS approval_status
+      FROM attendance a
+      JOIN classes c ON a.class_id = c.id
+      WHERE a.teacher_id = ?
+      ORDER BY a.attendance_date DESC
+    `;
+  
+    db.query(query, [teacher_id], (err, results) => {
+      if (err) {
+        console.error('Error fetching attendance history:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+  
+      res.json(results);
+    });
   };
   

@@ -8,6 +8,7 @@ const supervisorRoutes = require('./routes/supervisorRoutes');
 const classRoutes = require('./routes/classRoutes');
 const usersRoutes = require('./routes/userRoutes');
 const authenticateToken = require('./middleware/auth');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
 
@@ -30,9 +31,10 @@ db.query('SELECT 1', (err, results) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teacher', authenticateToken, teacherRoutes);
-app.use('/api/supervisor', authenticateToken, supervisorRoutes);
+app.use('/api/supervisor',  supervisorRoutes);
 app.use('/api/classes',  classRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 const PORT = 5000;
 app.listen(PORT, () => {
