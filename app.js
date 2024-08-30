@@ -9,7 +9,8 @@ const classRoutes = require('./routes/classRoutes');
 const usersRoutes = require('./routes/userRoutes');
 const authenticateToken = require('./middleware/auth');
 const attendanceRoutes = require('./routes/attendanceRoutes');
-
+const adminRoutes = require('./routes/admin');
+const reportsRoutes = require ('./routes/report');
 const app = express();
 
 app.use(express.json());
@@ -35,6 +36,8 @@ app.use('/api/supervisor',  supervisorRoutes);
 app.use('/api/classes',  classRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportsRoutes);
 
 const PORT = 5000;
 app.listen(PORT, () => {

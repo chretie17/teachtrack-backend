@@ -1,9 +1,7 @@
-// controllers/attendanceController.js
 const db = require('../db/db');
 
 
 
-// controllers/attendanceController.js
 
 exports.markAttendance = (req, res) => {
     const { class_id, teacher_id, attendance_date, status, latitude, longitude } = req.body;
