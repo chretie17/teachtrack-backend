@@ -8,13 +8,15 @@ exports.getAdminDashboardData = (req, res) => {
     const totalAttendanceRecordsQuery = `SELECT COUNT(*) AS total_attendance_records FROM attendance`;
     const unapprovedAttendanceQuery = `SELECT COUNT(*) AS unapproved_attendance FROM attendance WHERE approved_by_supervisor = FALSE`;
 
-    // SQL queries for graphs
     const attendanceOverTimeQuery = `
-      SELECT DATE(attendance_date) AS date, COUNT(*) AS count 
-      FROM attendance 
-      GROUP BY DATE(attendance_date)
-      ORDER BY DATE(attendance_date)
-    `;
+  SELECT DATE(CONVERT_TZ(attendance_date, '+00:00', '+02:00')) AS date, COUNT(*) AS count 
+  FROM attendance 
+  GROUP BY DATE(CONVERT_TZ(attendance_date, '+00:00', '+02:00'))
+  ORDER BY DATE(CONVERT_TZ(attendance_date, '+00:00', '+02:00'))
+`;
+
+  
+  
 
     const approvalStatusDistributionQuery = `
       SELECT 
@@ -31,26 +33,32 @@ exports.getAdminDashboardData = (req, res) => {
     `;
 
     const attendanceByDayOfWeekQuery = `
-      SELECT day, COUNT(*) AS count
-      FROM (
-        SELECT DAYNAME(attendance_date) AS day
-        FROM attendance
-      ) AS subquery
-      GROUP BY day
-      ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
-    `;
+    SELECT day, COUNT(*) AS count
+    FROM (
+      SELECT DAYNAME(CONVERT_TZ(attendance_date, '+00:00', '+02:00')) AS day
+      FROM attendance
+    ) AS subquery
+    GROUP BY day
+    ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
+  `;
+  
 
-    // Query for latest attendance records
     const latestAttendanceRecordsQuery = `
-      SELECT 
-        a.id, u.username AS teacher_name, c.course_name AS course_name, 
-        a.attendance_date, a.status, a.approved_by_supervisor 
-      FROM attendance a
-      JOIN users u ON a.teacher_id = u.id
-      JOIN classes c ON a.class_id = c.id
-      ORDER BY a.attendance_date DESC
-      LIMIT 5;
-    `;
+  SELECT 
+    a.id, 
+    u.username AS teacher_name, 
+    c.course_name AS course_name, 
+    DATE_FORMAT(CONVERT_TZ(a.attendance_date, '+00:00', '+02:00'), '%Y-%m-%d %H:%i:%s') AS attendance_date, 
+    a.status, 
+    a.approved_by_supervisor 
+  FROM attendance a
+  JOIN users u ON a.teacher_id = u.id
+  JOIN classes c ON a.class_id = c.id
+  ORDER BY a.attendance_date DESC
+  LIMIT 5;
+`;
+
+
 
     // Query for attendance by class
     const attendanceByClassQuery = `

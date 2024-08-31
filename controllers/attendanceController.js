@@ -1,42 +1,44 @@
 const db = require('../db/db');
 
-
+const sendNotification = require('./notification'); 
 
 
 exports.markAttendance = (req, res) => {
-    const { class_id, teacher_id, attendance_date, status, latitude, longitude } = req.body;
-  
-    const checkQuery = `
-      SELECT * FROM attendance 
-      WHERE class_id = ? AND teacher_id = ? AND attendance_date = ?
+  const { class_id, teacher_id, attendance_date, status, latitude, longitude } = req.body;
+
+  const checkQuery = `
+    SELECT * FROM attendance 
+    WHERE class_id = ? AND teacher_id = ? AND attendance_date = ?
+  `;
+
+  db.query(checkQuery, [class_id, teacher_id, attendance_date], (err, results) => {
+    if (err) {
+      console.error('Error checking attendance:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    if (results.length > 0) {
+      return res.status(400).json({ error: 'Attendance has already been recorded for this class.' });
+    }
+
+    const insertQuery = `
+      INSERT INTO attendance (class_id, teacher_id, attendance_date, status, latitude, longitude)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
-  
-    db.query(checkQuery, [class_id, teacher_id, attendance_date], (err, results) => {
+
+    db.query(insertQuery, [class_id, teacher_id, attendance_date, status, latitude, longitude], (err, result) => {
       if (err) {
-        console.error('Error checking attendance:', err);
+        console.error('Error marking attendance:', err);
         return res.status(500).json({ error: 'Internal server error' });
       }
-  
-      if (results.length > 0) {
-        return res.status(400).json({ error: 'Attendance has already been recorded for this class.' });
-      }
-  
-      const insertQuery = `
-        INSERT INTO attendance (class_id, teacher_id, attendance_date, status, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-  
-      db.query(insertQuery, [class_id, teacher_id, attendance_date, status, latitude, longitude], (err, result) => {
-        if (err) {
-          console.error('Error marking attendance:', err);
-          return res.status(500).json({ error: 'Internal server error' });
-        }
-  
-        res.status(201).json({ message: 'Attendance marked successfully', attendance_id: result.insertId });
-      });
+
+      // Send notification after successfully inserting attendance
+      sendNotification();
+
+      res.status(201).json({ message: 'Attendance marked successfully', attendance_id: result.insertId });
     });
-  };
-  
+  });
+};
   
 
 // Get Unapproved Attendance for Supervisor
@@ -143,4 +145,25 @@ exports.getAttendanceHistoryForTeacher = (req, res) => {
       res.json(results);
     });
   };
+  exports.getUnapprovedAttendanceCount = (req, res) => {
+    try {
+      const query = `
+        SELECT COUNT(*) AS unapprovedCount 
+        FROM attendance 
+        WHERE approved_by_supervisor = FALSE
+      `;
   
+      db.query(query, (err, results) => {
+        if (err) {
+          console.error('Error fetching unapproved attendance count:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+        }
+  
+        // Send the count to the client
+        res.json({ unapprovedCount: results[0].unapprovedCount });
+      });
+    } catch (error) {
+      console.error('Error fetching unapproved attendance count:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
