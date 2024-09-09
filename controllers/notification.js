@@ -4,15 +4,15 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
-    user: 'turachretien@gmail.com', // Your email address
-    pass: 'isqz tflp rawa iwxr', // Your app-specific password
+    user: 'uwikevine09@gmail.com', // Your email address
+    pass: 'toum fwqr pgyn mert', // Your app-specific password
   },
 });
 
 // Function to send email notification
 const sendNotification = () => {
   const mailOptions = {
-    from: 'turachretien@gmail.com', // Your email address
+    from: 'uwikevine09@gmail.com', // Your email address
     to: 'uwikevine09@gmail.com', // Supervisor's email address
     subject: 'New Attendance Waiting for Approval',
     html: `
