@@ -28,6 +28,8 @@ exports.register = (req, res) => {
 
 // Login User
 exports.login = (req, res) => {
+    console.log('Login request received:', req.body); // Log the request body
+
     const { identifier, password } = req.body;
   
     const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
