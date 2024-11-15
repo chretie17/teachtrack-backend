@@ -11,5 +11,6 @@ router.get('/teacher-performance', reportController.getTeacherPerformanceReport)
 
 // Route to fetch a custom report
 router.post('/custom', reportController.getCustomReport);
+router.get('/absence-report', reportController.getAbsenceReport);
 
 module.exports = router;

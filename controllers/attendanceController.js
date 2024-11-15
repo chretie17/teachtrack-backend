@@ -47,11 +47,11 @@ exports.generateQRCode = (req, res) => {
 
 // Endpoint to mark attendance using the QR code
 exports.markAttendanceUsingQRCode = (req, res) => {
-  const { identifier, latitude, longitude } = req.body; // Get the unique identifier from the request
+  const { identifier, latitude, longitude, teacher_id } = req.body; // Get the unique identifier and teacher_id from the request
 
-  // Lookup the stored JWT token using the scanned identifier
+  // Lookup the stored JWT token and teacher_id using the scanned identifier
   const lookupQuery = `
-    SELECT token FROM qr_code_mapping
+    SELECT token, teacher_id FROM qr_code_mapping
     WHERE identifier = ?
   `;
 
@@ -62,6 +62,16 @@ exports.markAttendanceUsingQRCode = (req, res) => {
     }
 
     const storedToken = results[0].token;
+    const storedTeacherId = results[0].teacher_id;
+
+    // Convert both teacher IDs to numbers to avoid type mismatch issues
+    const loggedInTeacherId = parseInt(teacher_id, 10); // Ensure the teacher_id from request is a number
+    const mappedTeacherId = parseInt(storedTeacherId, 10); // Ensure the teacher_id from mapping is a number
+
+    // Check if the logged-in teacher matches the teacher associated with the QR code
+    if (mappedTeacherId !== loggedInTeacherId) {
+      return res.status(400).json({ error: 'Teacher mismatch: You are not the assigned teacher for this class.' });
+    }
 
     // Verify and decode the stored JWT token
     jwt.verify(storedToken, JWT_SECRET, (err, decoded) => {
@@ -70,7 +80,7 @@ exports.markAttendanceUsingQRCode = (req, res) => {
         return res.status(400).json({ error: 'Invalid or expired QR code' });
       }
 
-      const { teacher_id, class_id, date } = decoded;
+      const { class_id, date } = decoded;
 
       // Fetch class details including class start and end times, and day of the week
       const classQuery = `
@@ -89,7 +99,7 @@ exports.markAttendanceUsingQRCode = (req, res) => {
         const currentTime = format(new Date(), 'HH:mm'); // Get current time in HH:mm format
         const currentDay = format(new Date(), 'EEEE'); // Get current day of the week in full form
 
-        // Check if current time is within class time
+        // Check if the current time is within the class time
         if (currentTime < start_time || currentTime > end_time) {
           return res.status(400).json({
             error: `Attendance can only be marked between ${start_time} and ${end_time}.`,
@@ -136,6 +146,7 @@ exports.markAttendanceUsingQRCode = (req, res) => {
     });
   });
 };
+
 
 const sendNotification = require('./notification'); 
 

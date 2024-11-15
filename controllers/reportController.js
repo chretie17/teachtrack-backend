@@ -40,41 +40,50 @@ exports.getTeacherPerformanceReport = (req, res) => {
   const { startDate, endDate } = req.query;
 
   let query = `
-    SELECT u.username AS teacher_name,
-           c.course_name AS lesson_name,
-           DATE_FORMAT(CONVERT_TZ(a.attendance_date, '+00:00', '+02:00'), '%Y-%m-%d') AS class_date,  -- Convert and format date to Rwanda Time
-           CASE WHEN a.approved_by_supervisor = TRUE THEN 'Present' ELSE 'Absent' END AS attendance_status
-    FROM users u
-    LEFT JOIN classes c ON u.id = c.teacher_id
-    LEFT JOIN attendance a ON c.id = a.class_id
-    WHERE u.role = 'teacher'
+    SELECT 
+      u.username AS teacher_name,
+      c.course_name AS lesson_name,
+      DATE_FORMAT(CONVERT_TZ(a.attendance_date, '+00:00', '+02:00'), '%Y-%m-%d') AS class_date,
+      CASE 
+        WHEN ab.reason IS NOT NULL THEN 'Absent' 
+        ELSE 'Present' 
+      END AS attendance_status,
+      ab.reason AS absence_reason
+    FROM 
+      attendance a
+    LEFT JOIN 
+      absences ab ON a.teacher_id = ab.teacher_id 
+                  AND a.attendance_date = ab.absence_date
+    LEFT JOIN 
+      users u ON a.teacher_id = u.id
+    LEFT JOIN 
+      classes c ON a.class_id = c.id
   `;
 
   // Add date filtering if date range is provided
   const queryParams = [];
-
   if (startDate && endDate) {
-    query += ` AND a.attendance_date BETWEEN CONVERT_TZ(?, '+00:00', '+02:00') AND CONVERT_TZ(?, '+00:00', '+02:00')`;
+    query += ` WHERE a.attendance_date BETWEEN CONVERT_TZ(?, '+00:00', '+02:00') AND CONVERT_TZ(?, '+00:00', '+02:00')`;
     queryParams.push(startDate, endDate);
   }
 
   query += ` ORDER BY u.username, a.attendance_date`;
 
-  db.query(query, queryParams, (err, result) => {
+  db.query(query, queryParams, (err, results) => {
     if (err) {
       console.error('Error fetching teacher performance report:', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
 
-    // Adding custom insights and recommendations to the result
-    const insights = result.map(row => ({
+    // Adding custom insights and recommendations
+    const insights = results.map(row => ({
       ...row,
       recommendation: row.attendance_status === 'Absent' 
-        ? 'Needs Improvement. Consider support programs to help manage attendance.' 
-        : 'Exemplary performance. Consider recognizing this teacher for perfect attendance.'
+        ? `Reason: ${row.absence_reason || 'Not specified'}` 
+        : 'Exemplary performance. Keep it up!',
     }));
 
-    res.json(insights); // Send data to the frontend with added insights
+    res.json(insights); // Send data with added insights to the frontend
   });
 };
 
@@ -141,5 +150,40 @@ exports.getCustomReport = (req, res) => {
     }));
 
     res.json(customizedResult); // Send customized data to the frontend
+  });
+};
+exports.getAbsenceReport = (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  let query = `
+    SELECT 
+      abs.id AS absence_id,
+      abs.absence_date,
+      abs.reason,
+      abs.status,
+      u.username AS teacher_name,
+      c.course_name AS lesson_name
+    FROM absences abs
+    JOIN users u ON abs.teacher_id = u.id
+    JOIN classes c ON abs.class_id = c.id
+  `;
+
+  const queryParams = [];
+
+  // Add date range filter if provided
+  if (startDate && endDate) {
+    query += ` WHERE abs.absence_date BETWEEN ? AND ?`;
+    queryParams.push(startDate, endDate);
+  }
+
+  query += ` ORDER BY abs.absence_date`;
+
+  db.query(query, queryParams, (err, results) => {
+    if (err) {
+      console.error('Error fetching absences report:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    res.json(results);
   });
 };

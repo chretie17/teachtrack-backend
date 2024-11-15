@@ -66,3 +66,16 @@ exports.login = (req, res) => {
       });
     });
   };
+  // Get All Users (Usernames only)
+exports.getAllUsers = (req, res) => {
+  const query = 'SELECT id, username FROM users';
+
+  db.query(query, (err, rows) => {
+    if (err) {
+      console.error('Error fetching users:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    res.json(rows); // Send the list of users to the frontend
+  });
+};

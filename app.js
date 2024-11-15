@@ -11,6 +11,7 @@ const authenticateToken = require('./middleware/auth');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const adminRoutes = require('./routes/admin');
 const reportsRoutes = require('./routes/report');
+const absencesRoutes = require('./routes/absence');
 
 require('./controllers/scheduler');
 
@@ -39,6 +40,8 @@ app.use('/api/users', usersRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/absences', absencesRoutes);
+
 
 const PORT = 5000;
 app.listen(PORT, () => {
