@@ -12,6 +12,7 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const adminRoutes = require('./routes/admin');
 const reportsRoutes = require('./routes/report');
 const absencesRoutes = require('./routes/absence');
+const announcementsRoutes = require('./routes/announcement');
 
 require('./controllers/scheduler');
 
@@ -41,6 +42,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/absences', absencesRoutes);
+app.use('/api/announcements', announcementsRoutes);
 
 
 const PORT = 5000;

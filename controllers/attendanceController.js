@@ -6,7 +6,6 @@ const { format } = require('date-fns'); // Import format from date-fns
 
 const JWT_SECRET = '48debc53eb84454ca9aa4371ef5b32bd'; // Your secret key
 
-// API to generate QR code for a class using a short identifier
 exports.generateQRCode = (req, res) => {
   const { teacher_id, class_id } = req.body;
 
